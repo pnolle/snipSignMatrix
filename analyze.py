@@ -10,9 +10,10 @@ import datetime
 #         print(k)
         
 
+videofile = 'mixkit-retro-80s-vhs-style-triangles-spin-over-neon-palm-tree-5391-medium.mp4'
 
 # cap = cv2.VideoCapture('VerticalLineLoop.mp4')
-cap = cv2.VideoCapture('mixkit-retro-80s-vhs-style-triangles-spin-over-neon-palm-tree-5391-medium.mp4')
+cap = cv2.VideoCapture(videofile)
 # count the number of frames
 frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -23,6 +24,8 @@ video_time = datetime.timedelta(seconds=seconds)
 print(f"duration in seconds: {seconds}")
 print(f"video time: {video_time}")
 
+f = open(videofile + ".txt", "a")
+
 counter = 0
 while cap.isOpened():
     ret, frame = cap.read()
@@ -32,6 +35,7 @@ while cap.isOpened():
         break
     rows,cols,_ = frame.shape
     print (counter, range(rows))
+    f.write("####################### Frame #"+ str(counter) + "\n"+str(frame)+"\n")
     counter+=1
 #     for i in range(rows):
 #         k = frame[i]
@@ -48,5 +52,6 @@ while cap.isOpened():
 #         if cv2.waitKey(25) & 0xFF == ord('q'):
 #                 break
 
+f.close()
 cap.release()
 
