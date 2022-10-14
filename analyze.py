@@ -4,10 +4,31 @@ import os
 import numpy as np
 import json
 
-def frameToFixedShape(frame, targetRows, targetCols, tfname):
+def get_square_image(frame):
     rows,cols,_ = frame.shape
+    if (rows<cols):
+        diff = cols-rows
+        margin = int((diff)/2//1)
+        return frame[:,margin:cols-margin]
+    elif (cols<rows):
+        diff = rows-cols
+        margin = int((diff)/2//1)
+        return frame[margin:rows-margin,:]
+    else:
+        return frame
+
+
+def frame_to_fixed_shape(frame, targetRows, targetCols, tfname):
+    frame = get_square_image(frame)
+    rows,cols,_ = frame.shape
+
+    print ("SHAPE", rows,cols,_)
+
     rowFactor = int(rows/targetRows//1)
     colFactor = int(cols/targetCols//1)
+    # TODO: interpolation
+    if rowFactor<=0 or colFactor<=0:
+        raise RuntimeError("assuming rowFactor and colFactor > 0. todo: interpolation.")
     
     print (targetRows, targetCols,rows,cols,rowFactor, colFactor)
 
@@ -28,7 +49,7 @@ def frameToFixedShape(frame, targetRows, targetCols, tfname):
         row.tofile(tfname,',')
     
 
-def video2Matrix(script_path, videofile, assetsfolder, dumpsfolder):
+def video_2_matrix(script_path, videofile, assetsfolder, dumpsfolder):
     print('video2Matrix', script_path, videofile, assetsfolder, dumpsfolder)
 
     vfname = '{}/{}/{}'.format(script_path,assetsfolder,videofile)
@@ -60,7 +81,7 @@ def video2Matrix(script_path, videofile, assetsfolder, dumpsfolder):
         # f.write('####################### Frame #'+ str(counter) + '\n'+str(frame)+'\n')
 
         if counter==0:
-            frameToFixedShape(frame, 100, 100, tfname)
+            frame_to_fixed_shape(frame, 100, 100, tfname)
 
         frames.append(frame)
         counter+=1
@@ -75,4 +96,4 @@ script_path = os.path.dirname(os.path.abspath(__file__))
 
 for f in os.listdir(script_path+'/assets'):
     if f.endswith('.mp4'):
-        video2Matrix(script_path, f, '/assets', '/dumps')
+        video_2_matrix(script_path, f, '/assets', '/dumps')
