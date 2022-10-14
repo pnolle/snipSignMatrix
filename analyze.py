@@ -28,27 +28,16 @@ def frame_to_fixed_shape(frame, targetRows, targetCols, tfname):
     if rowFactor<=0 or colFactor<=0:
         raise RuntimeError("assuming rowFactor and colFactor > 0. todo: interpolation.")
     
-    print (targetRows, targetCols, rows, cols, rowFactor, colFactor)
-
-    sframe = frame[::rowFactor]
-    print("frame", len(frame), len(sframe), rowFactor)
-
-    # only for display
-    row0 = frame[0]
-    srow0 = row0[::colFactor]
-    print("row0", len(row0), len(srow0), colFactor)
-
+    fixedrowsframe = frame[::rowFactor]
     resizedFrame = np.empty((targetRows, targetCols, 3), np.uint8)
 
-    for row in sframe:
+    for row in fixedrowsframe:
         # get every colFactor'th col from row and clip to a maximum number of targetCols
-        srow = row[::colFactor][:targetCols]
-        # print ("SROW", srow, len(srow))
-        np.append(resizedFrame, srow)
+        fixedcolsrow = row[::colFactor][:targetCols]
+        np.append(resizedFrame, fixedcolsrow)
 
-    rows,cols,_ = resizedFrame.shape
-    print("resizedFrame", rows,cols,_)
-    
+    return resizedFrame    
+
 
 def video_2_matrix(script_path, videofile, assetsfolder, dumpsfolder):
     print('video2Matrix', script_path, videofile, assetsfolder, dumpsfolder)
@@ -57,36 +46,32 @@ def video_2_matrix(script_path, videofile, assetsfolder, dumpsfolder):
     tfname = '{}/{}/{}'.format(script_path,dumpsfolder,videofile+'.txt')
 
     cap = cv2.VideoCapture(vfname)
-    frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    framecount = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     fps = cap.get(cv2.CAP_PROP_FPS)
     
-    seconds = round(frames / fps)
+    seconds = round(framecount / fps)
     video_time = datetime.timedelta(seconds=seconds)
+    print(f'framecount: {framecount}')
     print(f'duration in seconds: {seconds}')
     print(f'video time: {video_time}')
 
     # f = open(tfname, 'w')
+    targetRows = 100
+    targetCols = 100
 
     counter = 0
-    # frames = np.empty((1080, 1920, 3), np.uint8)
-    frames = []
+    frames = np.empty((int(framecount), targetRows, targetCols, 3), np.uint8)
 
     while cap.isOpened():
         ret, frame = cap.read()
-        # if frame is read correctly ret is True
         if not ret:
-            print('Can\'t receive frame (stream end?). Exiting ...')
+            print('Stream finished ...')
             break
-        # rows,cols,_ = frame.shape
-        # f.write(str(frame))
-        # f.write('####################### Frame #'+ str(counter) + '\n'+str(frame)+'\n')
 
-        if counter==0:
-            frame_to_fixed_shape(frame, 100, 100, tfname)
-
-        frames.append(frame)
+        resizedFrame = frame_to_fixed_shape(frame, 100, 100, tfname)
+        np.append(frames, resizedFrame)
         counter+=1
-    print("ALL FRAMES", str(len(frames)), frames[0].shape)
+    print('all frames: {} | shape: {}'.format(str(len(frames)), frames[0].shape))
 
     # f.write(str(frames))
     # f.close()
