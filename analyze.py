@@ -22,31 +22,32 @@ def frame_to_fixed_shape(frame, targetRows, targetCols, tfname):
     frame = get_square_image(frame)
     rows,cols,_ = frame.shape
 
-    print ("SHAPE", rows,cols,_)
-
     rowFactor = int(rows/targetRows//1)
     colFactor = int(cols/targetCols//1)
     # TODO: interpolation
     if rowFactor<=0 or colFactor<=0:
         raise RuntimeError("assuming rowFactor and colFactor > 0. todo: interpolation.")
     
-    print (targetRows, targetCols,rows,cols,rowFactor, colFactor)
-
-    resizedFrame = np.empty((targetRows, targetCols, 3), np.uint8)
+    print (targetRows, targetCols, rows, cols, rowFactor, colFactor)
 
     sframe = frame[::rowFactor]
     print("frame", len(frame), len(sframe), rowFactor)
 
+    # only for display
     row0 = frame[0]
     srow0 = row0[::colFactor]
     print("row0", len(row0), len(srow0), colFactor)
 
-    for row in frame:
+    resizedFrame = np.empty((targetRows, targetCols, 3), np.uint8)
 
-        # d_lin = row.reshape(-1)
-        # d_lin[25]
-        # print("d_lin", len(d_lin), d_lin[25]) #, len(row), rrow)
-        row.tofile(tfname,',')
+    for row in sframe:
+        # get every colFactor'th col from row and clip to a maximum number of targetCols
+        srow = row[::colFactor][:targetCols]
+        # print ("SROW", srow, len(srow))
+        np.append(resizedFrame, srow)
+
+    rows,cols,_ = resizedFrame.shape
+    print("resizedFrame", rows,cols,_)
     
 
 def video_2_matrix(script_path, videofile, assetsfolder, dumpsfolder):
