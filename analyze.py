@@ -4,6 +4,9 @@ import os
 import numpy as np
 import json
 
+# ### SETTINGS ###
+snipsignsize = [300, 300]
+
 def get_square_image(frame):
     rows,cols,_ = frame.shape
     if (rows<cols):
@@ -18,7 +21,7 @@ def get_square_image(frame):
         return frame
 
 
-def frame_to_fixed_shape(frame, targetRows, targetCols, tfname):
+def frame_to_fixed_shape(frame, targetRows, targetCols):
     frame = get_square_image(frame)
     rows,cols,_ = frame.shape
 
@@ -55,12 +58,8 @@ def video_2_matrix(script_path, videofile, assetsfolder, dumpsfolder):
     print(f'duration in seconds: {seconds}')
     print(f'video time: {video_time}')
 
-    # f = open(tfname, 'w')
-    targetRows = 100
-    targetCols = 100
-
     counter = 0
-    frames = np.empty((int(framecount), targetRows, targetCols, 3), np.uint8)
+    frames = np.empty((int(framecount), snipsignsize[0], snipsignsize[1], 3), np.uint8)
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -68,13 +67,10 @@ def video_2_matrix(script_path, videofile, assetsfolder, dumpsfolder):
             print('Stream finished ...')
             break
 
-        resizedFrame = frame_to_fixed_shape(frame, 100, 100, tfname)
+        resizedFrame = frame_to_fixed_shape(frame, 100, 100)
         np.append(frames, resizedFrame)
         counter+=1
     print('all frames: {} | shape: {}'.format(str(len(frames)), frames[0].shape))
-
-    # f.write(str(frames))
-    # f.close()
 
     cap.release()
 
