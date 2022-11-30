@@ -6,9 +6,11 @@ from json import JSONEncoder
 import numpy
 import base64
 import zlib
+import sys
 
 # ### SETTINGS ###
 snipsignsize = [300, 300]
+debugRun = True
 
 
 # ### HELPERS ###
@@ -68,6 +70,8 @@ def video_2_matrix(script_path, videofile, assetsfolder, targetRows, targetCols)
     print(f'duration in seconds: {seconds}')
     print(f'video time: {video_time}')
 
+    firstFrameShown = False
+
     frames = numpy.empty(
         (int(framecount), targetRows, targetCols, 3), numpy.uint8)
 
@@ -78,7 +82,10 @@ def video_2_matrix(script_path, videofile, assetsfolder, targetRows, targetCols)
             break
 
         resizedFrame = frame_to_fixed_shape(frame, targetRows, targetCols)
-        numpy.append(frames, resizedFrame)
+        if firstFrameShown == False:
+            cv2.imshow("resizedFrame", resizedFrame)
+            firstFrameShown = True
+        numpy.append(frames, frame)
 
     print('all frames: {} | shape: {}'.format(
         str(len(frames)), frames[0].shape))
@@ -97,7 +104,8 @@ def storeData(numpyData, videofile, dumpsfolder):
     zlibNumpyData = zlib.compress(b64NumpyData)
     print('zlib len', len(zlibNumpyData))
 
-    dumpfilename = '{}/{}/{}'.format(script_path, dumpsfolder, videofile+'.b64.zlib')
+    dumpfilename = '{}/{}/{}'.format(script_path,
+                                     dumpsfolder, videofile+'.b64.zlib')
     file1 = open(dumpfilename, 'wb')
     file1.write(zlibNumpyData)
     file1.close()
@@ -107,5 +115,9 @@ script_path = os.path.dirname(os.path.abspath(__file__))
 
 for f in os.listdir(script_path+'/assets'):
     if f.endswith('.mp4'):
-        numpyData = video_2_matrix(script_path, f, '/assets', snipsignsize[0], snipsignsize[1])
+        print('\nHandling video file \'%s\'.' %(f))
+        numpyData = video_2_matrix(
+            script_path, f, '/assets', snipsignsize[0], snipsignsize[1])
         storeData(numpyData, f, '/dumps')
+    if debugRun == True:
+        sys.exit('Aborting debug run.')
