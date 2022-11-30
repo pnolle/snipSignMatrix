@@ -70,8 +70,6 @@ def video_2_matrix(script_path, videofile, assetsfolder, targetRows, targetCols)
     print(f'duration in seconds: {seconds}')
     print(f'video time: {video_time}')
 
-    firstFrameShown = False
-
     frames = numpy.empty(
         (int(framecount), targetRows, targetCols, 3), numpy.uint8)
 
@@ -82,9 +80,6 @@ def video_2_matrix(script_path, videofile, assetsfolder, targetRows, targetCols)
             break
 
         resizedFrame = frame_to_fixed_shape(frame, targetRows, targetCols)
-        if firstFrameShown == False:
-            cv2.imshow("resizedFrame", resizedFrame)
-            firstFrameShown = True
         numpy.append(frames, frame)
 
     print('all frames: {} | shape: {}'.format(
