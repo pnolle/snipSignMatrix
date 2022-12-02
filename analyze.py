@@ -10,7 +10,7 @@ import sys
 
 # ### SETTINGS ###
 snipsignsize = [300, 300]
-debugRun = True
+debugRun = False
 
 
 # ### HELPERS ###
@@ -35,6 +35,17 @@ def get_square_image(frame):
         return frame
 
 
+def rgbValuesToOneInt(fixedcolsrow):
+    outputrow = numpy.empty((len(fixedcolsrow), 1), numpy.uint8)
+    for pixel in fixedcolsrow:
+        r = pixel[0] << 16
+        g = pixel[1] << 8
+        b = pixel[2]
+        rgb = r+g+b
+        numpy.append(outputrow, rgb)
+    return outputrow
+
+
 def frame_to_fixed_shape(frame, targetRows, targetCols):
     frame = get_square_image(frame)
     rows, cols, _ = frame.shape
@@ -47,12 +58,15 @@ def frame_to_fixed_shape(frame, targetRows, targetCols):
             "assuming rowFactor and colFactor > 0. todo: interpolation.")
 
     fixedrowsframe = frame[::rowFactor]
-    resizedFrame = numpy.empty((targetRows, targetCols, 3), numpy.uint8)
+    
+    # residedFrame filled with combined int value instead of separate r/g/b values - thus we have a depth of 1 for each column
+    resizedFrame = numpy.empty((targetRows, targetCols, 1), numpy.uint8)
 
     for row in fixedrowsframe:
         # get every colFactor'th col from row and clip to a maximum number of targetCols
         fixedcolsrow = row[::colFactor][:targetCols]
-        numpy.append(resizedFrame, fixedcolsrow)
+        row = rgbValuesToOneInt(fixedcolsrow)
+        numpy.append(resizedFrame, row)
 
     return resizedFrame
 
@@ -70,10 +84,16 @@ def video_2_matrix(script_path, videofile, assetsfolder, targetRows, targetCols)
     print(f'duration in seconds: {seconds}')
     print(f'video time: {video_time}')
 
-    frames = numpy.empty(
-        (int(framecount), targetRows, targetCols, 3), numpy.uint8)
+    limit = 3
 
-    while cap.isOpened():
+    # frames filled with combined int value instead of separate r/g/b values - thus we have a depth of 1 for each column
+    frames = numpy.empty((limit, targetRows, targetCols, 1), numpy.uint8)
+
+    framecounter = 0
+
+    # while cap.isOpened():
+    while framecounter < limit:
+        print(framecounter)
         ret, frame = cap.read()
         if not ret:
             print('Stream finished ...')
@@ -81,6 +101,7 @@ def video_2_matrix(script_path, videofile, assetsfolder, targetRows, targetCols)
 
         resizedFrame = frame_to_fixed_shape(frame, targetRows, targetCols)
         numpy.append(frames, frame)
+        framecounter = framecounter+1
 
     print('all frames: {} | shape: {}'.format(
         str(len(frames)), frames[0].shape))
@@ -94,23 +115,29 @@ def storeData(numpyData, videofile, dumpsfolder):
         " ", "")  # use dump() to write array into file
     print('json len', len(numpyData), len(encodedNumpyData))
 
+    jsonFileName = '{}/{}/{}'.format(script_path,
+                                     dumpsfolder, videofile+'.json')
+    jsonFile = open(jsonFileName, 'w')
+    jsonFile.write(encodedNumpyData)
+    jsonFile.close()
+
     bNumpyData = bytes(encodedNumpyData, 'utf-8')
     b64NumpyData = base64.b64encode(bNumpyData)
     zlibNumpyData = zlib.compress(b64NumpyData)
     print('zlib len', len(zlibNumpyData))
 
-    dumpfilename = '{}/{}/{}'.format(script_path,
-                                     dumpsfolder, videofile+'.b64.zlib')
-    file1 = open(dumpfilename, 'wb')
-    file1.write(zlibNumpyData)
-    file1.close()
+    binaryFileName = '{}/{}/{}'.format(script_path,
+                                       dumpsfolder, videofile+'.b64.zlib')
+    binaryFile = open(binaryFileName, 'wb')
+    binaryFile.write(zlibNumpyData)
+    binaryFile.close()
 
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 
 for f in os.listdir(script_path+'/assets'):
     if f.endswith('.mp4'):
-        print('\nHandling video file \'%s\'.' %(f))
+        print('\nHandling video file \'%s\'.' % (f))
         numpyData = video_2_matrix(
             script_path, f, '/assets', snipsignsize[0], snipsignsize[1])
         storeData(numpyData, f, '/dumps')
